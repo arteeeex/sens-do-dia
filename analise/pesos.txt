@@ -1,0 +1,11 @@
+Duelos validos: 702 de 15 demos (2025-08-10 a 2026-09-25)
+Kaplan-Meier do inimigo: {"curto/frente": {"eventos": 59, "n": 142, "banda_s": 0.172, "sobrevive_ate_fim": 0.065}, "curto/virada": {"eventos": 19, "n": 37, "banda_s": 0.179, "sobrevive_ate_fim": 0.444}, "fino/frente": {"eventos": 60, "n": 173, "banda_s": 0.172, "sobrevive_ate_fim": 0.106}, "fino/virada": {"eventos": 15, "n": 35, "banda_s": 0.179, "sobrevive_ate_fim": 0.531}, "flick/frente": {"eventos": 33, "n": 77, "banda_s": 0.172, "sobrevive_ate_fim": 0.0}, "flick/virada": {"eventos": 13, "n": 37, "banda_s": 0.179, "sobrevive_ate_fim": 0.595}, "medio/frente": {"eventos": 19, "n": 25, "banda_s": 0.172, "sobrevive_ate_fim": 0.0}, "medio/virada": {"eventos": 11, "n": 43, "banda_s": 0.179, "sobrevive_ate_fim": 0.739}, "rapido/frente": {"eventos": 37, "n": 63, "banda_s": 0.172, "sobrevive_ate_fim": 0.0}, "rapido/virada": {"eventos": 3, "n": 10, "banda_s": 0.179, "sobrevive_ate_fim": 0.656}, "virada/frente": {"eventos": 3, "n": 3, "banda_s": 0.172, "sobrevive_ate_fim": 0.0}, "virada/virada": {"eventos": 26, "n": 57, "banda_s": 0.179, "sobrevive_ate_fim": 0.543}}
+Cabeca: {'meia_largura': 5.01, 'meia_altura': 7.6, 'centro_abaixo_do_olho': 1.28, 'n_tiros': 85}
+
+situacao              n  aparece    peso   IC 95% do peso  theta   dist    vel  teu t 1o dano teu
+Mira já em cima     208    29.6%   24.9%   18.8%- 30.8%   0.85   1021    5.3  0.172         47%
+Ajuste curto        179    25.5%   26.8%   21.0%- 33.1%   2.36    784    6.9  0.266         46%
+Flick curto         114    16.2%   17.8%   11.5%- 23.0%   5.70    683    8.3  0.281         38%
+Flick médio          68     9.7%   12.0%    7.2%- 17.9%  17.03    807    8.2  0.500         10%
+Virada               60     8.5%    4.2%    2.2%-  8.1%  77.18    576    8.7  0.977          0%
+Alvo rápido          73    10.4%   14.3%    9.7%- 19.3%   6.55    302   28.0  0.281         56%

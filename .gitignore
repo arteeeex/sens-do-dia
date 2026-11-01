@@ -1,0 +1,16 @@
+# ambiente do Python (recria com: python -m venv .venv && pip install demoparser2 pandas numpy)
+.venv/
+__pycache__/
+*.pyc
+
+# programas e arquivos de terceiros: Source 2 Viewer e modelos do CS2 (da Valve)
+ferramentas/
+
+# duelos extraidos das demos: tem SteamID de outros jogadores das partidas
+analise/duelos.json
+
+# teu SteamID64 (os scripts leem daqui; ver analise/meu_id.py)
+analise/meu_steamid.txt
+
+# copias temporarias
+*.bak

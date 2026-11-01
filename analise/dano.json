@@ -1,0 +1,132 @@
+{
+ "acertos_ak_usados": 449,
+ "por_grupo": [
+  {
+   "grupo": "chest",
+   "colete": false,
+   "n": 38,
+   "multiplicador_efetivo": 0.984,
+   "dano_mediano": 34.0,
+   "dist_mediana": 831
+  },
+  {
+   "grupo": "chest",
+   "colete": true,
+   "n": 221,
+   "multiplicador_efetivo": 0.761,
+   "dano_mediano": 27.0,
+   "dist_mediana": 654
+  },
+  {
+   "grupo": "head",
+   "colete": true,
+   "n": 15,
+   "multiplicador_efetivo": 1.466,
+   "dano_mediano": 50.0,
+   "dist_mediana": 787
+  },
+  {
+   "grupo": "left_arm",
+   "colete": true,
+   "n": 15,
+   "multiplicador_efetivo": 0.758,
+   "dano_mediano": 27.0,
+   "dist_mediana": 547
+  },
+  {
+   "grupo": "left_leg",
+   "colete": true,
+   "n": 13,
+   "multiplicador_efetivo": 0.738,
+   "dano_mediano": 26.0,
+   "dist_mediana": 651
+  },
+  {
+   "grupo": "right_arm",
+   "colete": false,
+   "n": 9,
+   "multiplicador_efetivo": 0.983,
+   "dano_mediano": 34.0,
+   "dist_mediana": 884
+  },
+  {
+   "grupo": "right_arm",
+   "colete": true,
+   "n": 32,
+   "multiplicador_efetivo": 0.759,
+   "dano_mediano": 27.0,
+   "dist_mediana": 601
+  },
+  {
+   "grupo": "right_leg",
+   "colete": true,
+   "n": 19,
+   "multiplicador_efetivo": 0.737,
+   "dano_mediano": 26.0,
+   "dist_mediana": 827
+  },
+  {
+   "grupo": "stomach",
+   "colete": false,
+   "n": 9,
+   "multiplicador_efetivo": 1.241,
+   "dano_mediano": 43.0,
+   "dist_mediana": 894
+  },
+  {
+   "grupo": "stomach",
+   "colete": true,
+   "n": 72,
+   "multiplicador_efetivo": 0.956,
+   "dano_mediano": 33.0,
+   "dist_mediana": 748
+  }
+ ],
+ "modelo_para baixo": {
+  "exato": 0.8485523385300668,
+  "ate_1": 0.8663697104677061
+ },
+ "modelo_arredonda": {
+  "exato": 0.48775055679287305,
+  "ate_1": 0.8663697104677061
+ },
+ "teus_duelos_de_rifle_com_acerto": 278,
+ "inimigo_de_colete": 0.9172661870503597,
+ "inimigo_de_capacete": 0.8381294964028777,
+ "primeiro_acerto": {
+  "chest": 0.45,
+  "head": 0.266,
+  "stomach": 0.14,
+  "right_arm": 0.079,
+  "right_leg": 0.029,
+  "left_leg": 0.022,
+  "left_arm": 0.014
+ },
+ "todos_teus_acertos": {
+  "chest": 0.459,
+  "head": 0.198,
+  "stomach": 0.174,
+  "right_arm": 0.089,
+  "left_arm": 0.04,
+  "right_leg": 0.02,
+  "left_leg": 0.018,
+  "neck": 0.002
+ },
+ "kills": 194,
+ "kill_hs": 0.4793814432989691,
+ "kill_depois_de_1o_acerto_no_corpo_ms": [
+  297.0,
+  406.0,
+  500.0
+ ],
+ "acertos_ate_kill_1o_no_corpo": {
+  "2.0": 9,
+  "3.0": 3,
+  "4.0": 20,
+  "5.0": 7,
+  "6.0": 1
+ },
+ "n_kill_1o_no_corpo": 40,
+ "primeiro_no_corpo_virou_kill": 0.6078431372549019,
+ "kill_hs_depois_de_1o_no_corpo": 0.35
+}
