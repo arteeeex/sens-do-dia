@@ -6,7 +6,7 @@ limite de Bonferroni (5% somando todos os vizinhos), o desenho vai para ele e a 
 com dias novos. Para quando nenhum vizinho ganha alem do acaso: ai e otimo local certificado em
 dias que a escolha nao viu.
 
-Uso: python polir_certificado.py <otimo_livre_X.json> <minutos> [--sem-custo] [voltas] [--semente N] [--lote]
+Uso: python polir_certificado.py <otimo_livre_X.json> <minutos> [--sem-custo] [voltas] [--semente N] [--lote] [--faixa-final F [--afina-geometrico]] [--min-alvos M]
      --lote: junta na mesma volta todos os vizinhos que ganham com significancia e mexem em numeros diferentes
 """
 import copy
@@ -23,7 +23,7 @@ import otimizar_exato as oe  # noqa: E402
 from concorrentes_rodada import simular_v, sortear_adapt  # noqa: E402
 
 
-def vizinhos(p):
+def vizinhos(p, faixa_final=None, geometrico=False):
     viz = []
     R = len(p["n"])
     for r in range(R):
@@ -49,7 +49,9 @@ def vizinhos(p):
         q = copy.deepcopy(p); q["gam"] *= f; q["ks"] = [k * f for k in q["ks"]]; viz.append((f"gama e todos os passos x{f}", q))
         q = copy.deepcopy(p); q["ks"] = [k * f for k in q["ks"]]; viz.append((f"todos os passos x{f}", q))
     for d in (-0.01, 0.01):
-        q = copy.deepcopy(p); q["Ws"] = [w + d for w in q["Ws"]]; q["W0"] = q["Ws"][0]; viz.append((f"todas as faixas {d:+.2f}", q))
+        q = copy.deepcopy(p)
+        q["Ws"] = [w + d for w in q["Ws"][:-1]] + [q["Ws"][-1] if faixa_final is not None else q["Ws"][-1] + d]
+        q["W0"] = q["Ws"][0]; viz.append((f"todas as faixas {d:+.2f}", q))
     # uma rodada a mais (repete a ultima e tira alvos das maiores para caber no mesmo tempo) ou a menos
     # (os alvos dela vao para as maiores); cada rodada custa 4 blocos x (alvos x 1,05 s + 6 s)
     q = copy.deepcopy(p)
@@ -62,10 +64,20 @@ def vizinhos(p):
     if R > 2:
         q = copy.deepcopy(p)
         sobra = q["n"].pop(); q["Ws"].pop(); q["ks"].pop()
+        if faixa_final is not None:
+            q["Ws"][-1] = faixa_final
         dar = int(((sobra + p.get("adapt", 0)) * 1.05 + 6) // 1.05)
         for _ in range(dar):
             q["n"][int(np.argmin(q["n"]))] += 1
         viz.append(("uma rodada a menos", q))
+    if geometrico:                  # zoom geometrico: as faixas saem da 1a; vizinho que nao muda nada sai
+        from otimizar_livre import geo
+        viz = [(n, geo(q, faixa_final)) for n, q in viz]
+        viz = [(n, q) for n, q in viz if q["Ws"] != p["Ws"] or q["n"] != p["n"] or q["ks"] != p["ks"]
+               or q["gam"] != p["gam"] or q.get("gl0") != p.get("gl0")]
+    if faixa_final is not None:     # regra de afinar: so vizinhos que encolhem a cada rodada e terminam na menor faixa
+        viz = [(n, q) for n, q in viz if abs(q["Ws"][-1] - faixa_final) < 1e-12
+               and all(q["Ws"][i] >= q["Ws"][i + 1] - 1e-12 for i in range(len(q["Ws"]) - 1))]
     return viz
 
 
@@ -77,15 +89,17 @@ def main():
     base = int(sys.argv[sys.argv.index("--semente") + 1]) if "--semente" in sys.argv else 7_000_000
     dado = json.load(open(arq, encoding="utf-8"))
     p = dado["desenho"]
+    ff = float(np.log(float(sys.argv[sys.argv.index("--faixa-final") + 1]))) if "--faixa-final" in sys.argv else None
+    min_alvos = int(sys.argv[sys.argv.index("--min-alvos") + 1]) if "--min-alvos" in sys.argv else 2
     N = 400000
     for v in range(voltas):
         s = oe.Sorteio(N, base + 101 * v, max_blocos=max(64, 4 * (len(p["n"]) + 1)), ruido_incerto=True)   # +1: o vizinho com uma rodada a mais
         ad = None if sem_custo else sortear_adapt(N, semente=base + 1_000_000 + 101 * v)
         l0, m0, _ = simular_v(p, s, adapta=ad)
         res = []
-        for nome, q in vizinhos(p):
+        for nome, q in vizinhos(p, ff, "--afina-geometrico" in sys.argv):
             l, m, _ = simular_v(q, s, adapta=ad)
-            if m > orc + 1e-9:
+            if m > orc + 1e-9 or min(q["n"]) < min_alvos:
                 continue
             d = l - l0
             res.append((d.mean(), d.mean() / (d.std() / np.sqrt(N)), nome, q))

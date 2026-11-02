@@ -5,8 +5,9 @@ Duelo = um inimigo entra no campo de visao do usuario (approximate_spotted_by) e
 
 Para cada duelo grava: onde a mira estava em relacao a cabeca do inimigo no instante em
 que ele apareceu, a distancia, como o alvo se moveu na tela (trajetoria angular, ja
-somando o movimento do proprio usuario) e quanto tempo cada um levou para dar o
-primeiro dano.
+somando o movimento do proprio usuario, que e o que o app usa; e so a do inimigo, com o olho
+do usuario parado no comeco do duelo, para a conferencia de velocidade_boneco.py) e quanto
+tempo cada um levou para dar o primeiro dano.
 
 Uso: python extrair_duelos.py <pasta_das_demos> <saida.json>
 """
@@ -192,17 +193,23 @@ def montar(tipo, t0, t_fim, sid_e, E, U, nmax, hurt, morte, meus_tiros, id_demo,
     dpitch = float(pitch_alvo - U["pitch"][t0])
     mira = direcao(U["pitch"][t0], U["yaw"][t0])
     theta = math.degrees(math.acos(max(-1.0, min(1.0, float(np.dot(mira, v / dist))))))
-    # trajetoria do alvo na tela: movimento relativo, ja somando o do proprio usuario
-    traj, dists = [], []
+    # trajetoria do alvo na tela: movimento relativo, ja somando o do proprio usuario (traj), e so
+    # o do inimigo, com o teu olho parado onde estava no comeco do duelo (traj_ini: no teste tu fica
+    # parado, entao o boneco anda so o que o inimigo andou, na velocidade dele no CS)
+    traj, dists, traj_ini, dists_ini = [], [], [], []
     for t in range(t0, min(t0 + TRAJ_TICKS, nmax - 1) + 1, TRAJ_PASSO):
         if not (E["vivo"][t] and U["vivo"][t]):
             break
         vv = olho(E, t) - olho(U, t)
-        if not np.all(np.isfinite(vv)):
+        vi = olho(E, t) - o
+        if not (np.all(np.isfinite(vv)) and np.all(np.isfinite(vi))):
             break
         ya, pa = angulos_para(vv[0], vv[1], vv[2])
         traj.append([round(float(wrap180(ya - yaw_alvo)), 3), round(float(pa - pitch_alvo), 3)])
         dists.append(round(float(np.linalg.norm(vv)), 1))
+        ya, pa = angulos_para(vi[0], vi[1], vi[2])
+        traj_ini.append([round(float(wrap180(ya - yaw_alvo)), 3), round(float(pa - pitch_alvo), 3)])
+        dists_ini.append(round(float(np.linalg.norm(vi)), 1))
     vel = None
     if len(traj) >= 3:
         tr = np.array(traj)
@@ -222,7 +229,7 @@ def montar(tipo, t0, t_fim, sid_e, E, U, nmax, hurt, morte, meus_tiros, id_demo,
         # camera nessa altura quando o alvo nasce, para nao acumular desvio de um alvo para o outro.
         "pitch_eu": round(float(U["pitch"][t0]), 2),
         "dist": round(dist, 1), "vel": None if vel is None else round(vel, 2),
-        "traj": traj, "dists": dists,
+        "traj": traj, "dists": dists, "traj_ini": traj_ini, "dists_ini": dists_ini,
         "ttd_eu": (int(dano_eu["tick"].min()) - t0) / TICK if len(dano_eu) else None,
         "ttd_ele": (int(dano_ele["tick"].min()) - t0) / TICK if len(dano_ele) else None,
         "grupo_eu": str(primeiro_dano_eu["hitgroup"].iloc[0]) if len(primeiro_dano_eu) else None,

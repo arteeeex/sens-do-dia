@@ -44,6 +44,19 @@ Conferência da emenda: a velocidade em unidades do jogo bate com a real (median
 
 No chão, o inimigo anda como no CS (mediana 91 u/s, 99% abaixo de 248; correndo é 250). Mas em 47% dos teus duelos mais da metade do movimento na tela era teu, e no teste tu fica parado: o teu passo vira o passo do boneco, que parece 1,5× mais rápido que o inimigo. Ficou o relativo porque o teu próprio movimento deixa os duelos mais lentos de verdade: nos 316 duelos de frente com o teu primeiro dano, dobrar a velocidade que vem de ti aumenta o teu tempo em ~19% (coeficiente +0,246 ± 0,059 em ln(tempo) por ln(velocidade), t = 4,2), mais que dobrar a do inimigo, ~13% (+0,176 ± 0,067, t = 2,6), com ângulo e distância fixos; e o relativo explica o teu tempo melhor que só o inimigo (R² 0,153 contra 0,145). Tu quase sempre para antes de atirar (mediana de 49 u/s no primeiro tiro; abaixo de 85 u/s em 75% dos duelos), e o caminho também tem essa parada. No jogo, quando tu anda, o mundo inteiro desliza; aqui só o boneco se mexe, por isso parece mais rápido.
 
+**Conferência da quinta revisão (02/11/2026, `analise/velocidade_boneco.py`).** A razão acima não separa duas explicações. Andar atrasa o duelo porque a mira tem que compensar o alvo andando na tela? Ou porque no CS2 tu precisa parar para atirar com precisão? Andar de lado mexe o alvo na tela; andar de frente ou de costas quase não mexe. Os dois tiram a precisão do tiro do mesmo jeito.
+
+Nos 316 duelos de frente com o teu primeiro dano (inimigo, ângulo e distância fixos), os dois atrasam quase igual:
+- de lado: +0,149 ± 0,042 em ln(tempo) por ln(1 + velocidade);
+- de frente ou de costas: +0,102 ± 0,041;
+- diferença: +0,048 ± 0,074 (z = 0,65), dentro do acaso.
+
+Então esse atraso vem de andar, não de mirar, e não decide o caminho. O que decide:
+1. **Prever o teu tempo fora da amostra (deixa-um-fora):** empate. O erro em ln(tempo)² é 0,8075 no relativo e 0,8158 no só-inimigo (z = −0,59; com as viradas, z = −0,15).
+2. **Na hora de acertar:** no último quarto de segundo antes do teu primeiro dano, o alvo ainda andava na tua tela 1,37× mais rápido que o inimigo sozinho (mediana 7,6 contra 4,7°/s; no primeiro quarto, 8,2 contra 6,0). Tu ainda estava andando na hora de acertar, e a mira teve que seguir o relativo.
+
+Fica o relativo: é o caminho que tu realmente teve que mirar, na velocidade da tua tela no CS (projeção do CS2: FOV vertical de 73,74°, o horizontal pelo formato, esticado inclusive). O que o teste não tem é o teclado. No jogo tu sabe para onde vai andar; aqui o boneco faz esse pedaço sozinho, e por isso parece rápido. A extração refeita bateu campo a campo com a anterior nos 798 duelos e agora também grava o caminho só do inimigo (`traj_ini`), usado só nesta conferência.
+
 **Concorrentes da continuação (terceira revisão, `analise/concorrentes_caminho.py`).** Corta os caminhos reais dos inimigos que ficaram vivos os 2,5 s (199 caminhos, cortes de 0,25 a 1,5 s), esconde o resto e deixa cada método continuar por 0,75 s. O que conta é o jeito do movimento (a dificuldade), não acertar o ponto: compara com o futuro de verdade pela distância de Kolmogorov-Smirnov (0 = igual, 1 = nada a ver) em velocidade na tela, deslocamento em 0,5 s, tranco (mudança de velocidade entre amostras: o zigue-zague) e salto de velocidade na costura.
 
 | Método | Velocidade | Deslocamento | Tranco | Salto | **Média** |
@@ -393,6 +406,8 @@ No app completo (300 dias simulados): **erro típico de 10,8%**, ruído do méto
 | `analise/concorrentes_rodada.py`, `concorrentes_rodada_gama.py`, `concorrentes_rodada_v2.py` | Corridas da regra da rodada: livre, Kesten, momento, sondas mais perto, afinar mais rápido, com e sem custo de troca de sens; e a corrida contra o desenho novo |
 | `analise/robustez_livre.py`, `conferir_adapt_livre.py`, `conferir_adapt_cenarios.py` | Os 9 ataques de cada desenho novo (com custo de troca); alvos de adaptação 0 a 3 |
 | `analise/resposta_centro.py`, `movimento_proprio.py`, `resumo_livre.py`, `duracoes_js.py` | Quanto o centro anda; quanto do movimento do boneco é teu; resumo dos desenhos finais; bloco DURACOES do app gerado dos arquivos |
+| `analise/otimizar_bancada.py`, `otimizar_livre.py --faixa-final --afina-geometrico --min-alvos` | Quinta revisão: a regra exata da bancada PSA (e com as sondas nas pontas) e o afinar até a menor faixa, com os alvos otimizados (`otimo_livre_*_zoom_min12.json`; sem o mínimo de alvos: `*_zoom.json`, `*_afina.json`) |
+| `analise/velocidade_boneco.py` | Caminho relativo contra só o inimigo nos duelos reais: quem prevê melhor o teu tempo, de lado contra de frente, velocidade na hora do tiro (`velocidade_boneco.json`) |
 | Source 2 Viewer CLI 20.1 | Usado uma vez para tirar as hitboxes (resultado salvo em `analise/hitboxes_cs2.json`). A pasta `ferramentas/` foi apagada na limpeza; para re-extrair as hitboxes, baixar de novo do GitHub do ValveResourceFormat |
 
 Os dados ficam no navegador (`localStorage`, chave `sens-do-dia/v1`). O histórico é só consulta. A mira é gravada no máximo a cada 6 ms (144 Hz grava todo quadro, 240 Hz um sim e um não): uma sessão inteira dá ~1,6 milhão de caracteres. Se o navegador ficar sem espaço, o app salva sem a trajetória quadro a quadro (a sens do dia não muda) e avisa no resultado para exportar o JSON.
@@ -480,3 +495,14 @@ O que não tem concorrente para medir: a definição do duelo (já variada na se
 - os números do app conferidos contra os arquivos da otimização (`duracoes_js.py` gera o bloco).
 
 Os dados das demos (situações, pesos, caminhos, boneco) não mudaram nesta revisão.
+
+### Quinta revisão (afinar até a menor faixa? regra da bancada? o boneco é rápido? dá para confiar na simulação?)
+
+Perda e erro típico da sens em 300 mil dias novos, com custo de troca de sens. O app atual: 12 min 0,1651% (erro 11,4%), 8 min 0,1828% (11,9%).
+
+| Pergunta | Resposta (com o dado) | Mudou algo? |
+|---|---|---|
+| Chegar na última rodada com a menor faixa, como nas primeiras versões? | A faixa encolhe pela mesma razão até ×1,07 na última rodada, com pelo menos 12 alvos por bloco; o resto é re-otimizado (`otimizar_livre.py --faixa-final 1.07177 --afina-geometrico --min-alvos 12`). Perde em todas as durações: <br>• 8 min: 0,2276% contra 0,1828% <br>• 12 min: 0,1993% contra 0,1651% (erro 12,4% contra 11,4%) <br>• 16 min: 0,1884% contra 0,1513% <br>• 20 min: 0,1740% contra 0,1444% <br>• 25 min: 0,1652% contra 0,1366% <br>• 35 min: 0,1508% contra 0,1282% <br>Sem o mínimo de 12 alvos, o otimizador deixa as rodadas estreitas com 2 alvos e o zoom vira só de fachada: com a mesma razão, várias rodadas de 2 alvos (`*_zoom.json`); com a faixa livre só encolhendo, a última rodada fica com 2 alvos (`*_afina.json`, 12 min 0,1653%) | não: ficou o que a simulação mostrou |
+| Exatamente a regra da bancada PSA v3? | A regra: sondas a ÷1,316 e ×1,316 (25% e 75% da faixa de ÷√3 a ×√3), centro anda w × ¼ da faixa, faixa pela metade, γ = 1, 6 graus de liberdade do ruído inicial. Mesmo com os alvos e as rodadas ajustados (1ª passada de `otimizar_bancada.py`), fica 3× pior: <br>• 12 min: 0,5205% (erro 20,3%) <br>• 8 min: 0,5876% (erro 21,2%) <br>Com as sondas nas pontas da faixa e o centro andando igual à bancada (as primeiras versões do app): 0,2552% (14,3%) e 0,2826% (14,7%). <br>Por quê: a informação de uma rodada cresce com o quadrado da distância entre as sondas, então sondas a 25% e 75% rendem ¼ por alvo. E o passo cheio leva o centro até a sonda que venceu, então o acaso mexe muito o centro | não |
+| O boneco anda na velocidade do CS? | O app toca a 32 amostras/s, a taxa da gravação, com a projeção do CS2. O caminho é o que estava na tua tela no jogo, com o teu movimento junto. Contra o caminho só do inimigo: <br>• empata em prever o teu tempo (z = −0,59); <br>• andar de frente ou de costas atrasa o duelo quase igual a andar de lado (seção 2.1); <br>• na hora de acertar, o alvo ainda andava 1,37× o inimigo sozinho | não: o relativo é o que tu tinha que mirar |
+| Dá para confiar na simulação? | Ela não simula o jogador, e sim o método: 300 mil jogadores com sens ideal, formato de curva, ruído, cansaço e custo de troca sorteados. <br>Vem das demos: caminho do alvo, hitboxes, dano da AK, pesos das situações, limite por alvo. <br>É suposto: o ruído de um alvo para outro (0,38 em ln do tempo) e o formato da curva. Por isso o ruído é sorteado de ×0,5 a ×2, e os ataques testam curvas que o otimizador nunca viu. <br>No teste, o app decide com o ruído medido no dia; o suposto só escolhe quantos alvos vão em cada rodada. Um teste exportado (botão Exportar) troca o suposto pelo medido | — |
