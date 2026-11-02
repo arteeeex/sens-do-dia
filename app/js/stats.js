@@ -326,11 +326,13 @@
   // regras do PSA gravadas na sessao (testes antigos: passo 1/4 da faixa, faixa x 1/2, gama 1)
   function regras(sessao) {
     const p = sessao.psa || {};
-    return { k: p.k != null ? p.k : 0.25, rho: p.rho != null ? p.rho : 0.5, gama: p.gama != null ? p.gama : 1 };
+    return { k: p.k != null ? p.k : 0.25, rho: p.rho != null ? p.rho : 0.5, gama: p.gama != null ? p.gama : 1, ks: p.ks || null };
   }
 
   function avaliarRodada(sessao, r, pesos) {
-    const { k, gama } = regras(sessao);
+    const { k: k0, ks, gama } = regras(sessao);
+    // passo da rodada: um por rodada (forma livre; a rodada extra repete o ultimo) ou o mesmo em todas
+    const k = ks ? ks[Math.min(r.n, ks.length) - 1] : k0;
     const notas = { A: [], B: [] }, tempos = { A: [], B: [] };
     let somaN = 0, nb = 0;
     for (const i of r.blocos) {

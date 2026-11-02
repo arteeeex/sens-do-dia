@@ -7,35 +7,44 @@
   const LN3 = Math.log(3);
   const url = new URLSearchParams(location.search);
   const RAPIDO = url.has('rapido');
-  // Numeros exatos de cada duracao, saidos da otimizacao com os mesmos sorteios para todos os
-  // desenhos (analise/otimizar_exato.py: orcamento + polir; analise/otimizar_adapt.py).
-  //   W0   = largura (em ln) da faixa da 1a rodada; as duas pontas sao as sondas
-  //   k    = passo: o centro anda forca x k x faixa
-  //   rho  = a faixa da rodada seguinte = faixa x rho
+  // Numeros exatos de cada duracao (quarta revisao, 02/11/2026): analise/otimizar_livre.py (descida
+  // coordenada com os mesmos sorteios para todos os desenhos) e analise/polir_certificado.py (vizinhos
+  // em 400 mil dias novos a cada volta ate nenhum ganhar alem do acaso). Gerado por duracoes_js.py.
+  //   Ws   = largura (em ln) da faixa de cada rodada; as duas pontas sao as sondas
+  //   ks   = passo de cada rodada: o centro anda forca x k x faixa
   //   gama = forca = diferenca / (gama x MDE de 95%), entre -1 e 1
   //   duelosPorRodada = alvos por bloco em cada rodada (numero de rodadas = tamanho da lista)
-  // Otimo final com o ruido de cada dia incerto (x0,5 a x2), conferido em 300 mil dias novos
-  // (analise/otimo_orcamento_*_final.json). Perda media: 8 min 0,2037%, 12 min 0,1820%,
-  // 16 min 0,1701%, 20 min 0,1617%, 25 min 0,1552%, 35 min 0,1479% (desenho antigo: 0,2797%).
+  //   adapt = 0: todos os alvos contam (ganhou de 1 em todos os cenarios de custo de troca)
+  //   (testes antigos: W0, k e rho, faixa da rodada seguinte = faixa x rho)
+  // Perda media em 300 mil dias novos (ruido incerto, com custo de troca de sens e aquecimento),
+  // desenho anterior -> este: 8 min 0,2034 -> 0,1828%; 12 min 0,1814 -> 0,1651%; 16 min 0,1697 ->
+  // 0,1513%; 20 min 0,1615 -> 0,1444%; 25 min 0,1535 -> 0,1366%; 35 min 0,1470 -> 0,1282%.
   const DURACOES = {
-    '8': { nome: '8 minutos', W0: Math.log(3.7382), k: 0.195, rho: 0.905, gama: 2.6125, gl0: 16,
-      duelosPorRodada: [18, 19, 24, 26], adapt: 1, aquec: 0 },
-    '12': { nome: '12 minutos (padrão)', W0: Math.log(3.7010), k: 0.1275, rho: 0.915, gama: 1.9, gl0: 16,
-      duelosPorRodada: [21, 17, 20, 22, 24, 24], adapt: 1, aquec: 0 },
-    '16': { nome: '16 minutos', W0: Math.log(3.7758), k: 0.15, rho: 0.92, gama: 2.6, gl0: 16,
-      duelosPorRodada: [18, 18, 21, 23, 23, 24, 24, 23], adapt: 1, aquec: 0 },
-    '20': { nome: '20 minutos', W0: Math.log(3.7758), k: 0.135, rho: 0.93, gama: 2.6, gl0: 17,
-      duelosPorRodada: [16, 16, 20, 22, 23, 25, 25, 24, 24, 23], adapt: 1, aquec: 0 },
-    '25': { nome: '25 minutos', W0: Math.log(3.7010), k: 0.12, rho: 0.93, gama: 2.4375, gl0: 17,
-      duelosPorRodada: [27, 19, 23, 25, 27, 27, 29, 28, 27, 26, 25], adapt: 1, aquec: 0 },
-    '35': { nome: '35 minutos (máximo)', W0: Math.log(3.7758), k: 0.105, rho: 0.935, gama: 2.5, gl0: 18,
-      duelosPorRodada: [31, 20, 24, 27, 29, 30, 33, 31, 32, 31, 30, 28, 30, 30], adapt: 1, aquec: 0 },
+    '8': { nome: '8 minutos', Ws: [Math.log(3.23365), Math.log(2.93981), Math.log(2.94461), Math.log(2.90775), Math.log(2.92232)],
+      ks: [0.19, 0.1075, 0.0875, 0.0775, 0.065], gama: 1.45, gl0: 22,
+      duelosPorRodada: [29, 15, 14, 14, 13], adapt: 0, aquec: 0 },
+    '12': { nome: '12 minutos (padrão)', Ws: [Math.log(3.03774), Math.log(2.81477), Math.log(2.75069), Math.log(2.72502), Math.log(2.71086), Math.log(2.69608)],
+      ks: [0.185, 0.10625, 0.085, 0.07125, 0.0625, 0.05375], gama: 1.3875, gl0: 27,
+      duelosPorRodada: [36, 22, 20, 19, 19, 18], adapt: 0, aquec: 0 },
+    '16': { nome: '16 minutos', Ws: [Math.log(2.97015), Math.log(2.5788), Math.log(2.5588), Math.log(2.54613), Math.log(2.5391), Math.log(2.53619), Math.log(2.52341), Math.log(2.49968), Math.log(2.5248)],
+      ks: [0.18862, 0.12218, 0.10288, 0.09002, 0.07716, 0.06859, 0.06216, 0.05787, 0.05144], gama: 1.57543, gl0: 27,
+      duelosPorRodada: [41, 18, 18, 17, 17, 16, 17, 17, 16], adapt: 0, aquec: 0 },
+    '20': { nome: '20 minutos', Ws: [Math.log(2.88237), Math.log(2.60472), Math.log(2.5588), Math.log(2.49571), Math.log(2.48882), Math.log(2.48597), Math.log(2.44883), Math.log(2.4258), Math.log(2.45018), Math.log(2.45018)],
+      ks: [0.185, 0.1125, 0.09, 0.08, 0.07, 0.06, 0.0525, 0.0525, 0.045, 0.04], gama: 1.4875, gl0: 33,
+      duelosPorRodada: [44, 24, 22, 21, 21, 20, 19, 20, 19, 18], adapt: 0, aquec: 0 },
+    '25': { nome: '25 minutos', Ws: [Math.log(2.88237), Math.log(2.5018), Math.log(2.47643), Math.log(2.44145), Math.log(2.42034), Math.log(2.3998), Math.log(2.40286), Math.log(2.3807), Math.log(2.36854), Math.log(2.36556), Math.log(2.39491), Math.log(2.37108), Math.log(2.37108), Math.log(2.32413)],
+      ks: [0.18312, 0.114, 0.095, 0.0855, 0.076, 0.0665, 0.057, 0.057, 0.04987, 0.04513, 0.04038, 0.038, 0.038, 0.03562], gama: 1.53187, gl0: 35,
+      duelosPorRodada: [45, 21, 20, 20, 20, 18, 17, 18, 18, 17, 16, 15, 16, 16], adapt: 0, aquec: 0 },
+    '35': { nome: '35 minutos (máximo)', Ws: [Math.log(2.75554), Math.log(2.48992), Math.log(2.42664), Math.log(2.38932), Math.log(2.36415), Math.log(2.35), Math.log(2.34598), Math.log(2.32798), Math.log(2.31881), Math.log(2.29472), Math.log(2.28975), Math.log(2.29182), Math.log(2.27758), Math.log(2.28088), Math.log(2.25818), Math.log(2.22456)],
+      ks: [0.185, 0.11, 0.085, 0.08, 0.07, 0.06, 0.0525, 0.05, 0.045, 0.0425, 0.0375, 0.035, 0.035, 0.03, 0.03, 0.03], gama: 1.5, gl0: 43,
+      duelosPorRodada: [52, 29, 24, 25, 25, 24, 23, 23, 23, 23, 22, 22, 23, 23, 23, 24], adapt: 0, aquec: 0 },
   };
   const DURACAO_PADRAO = '12';
   function protoDe(chave) {
     const d = DURACOES[chave] || DURACOES[DURACAO_PADRAO];
     const p = Object.assign({ chave: DURACOES[chave] ? chave : DURACAO_PADRAO }, d);
     p.duelosPorRodada = d.duelosPorRodada.slice();
+    if (d.Ws) { p.Ws = d.Ws.slice(); p.ks = d.ks.slice(); p.W0 = d.Ws[0]; p.k = d.ks[0]; }
     if (RAPIDO) {   // so para testar o app: mesmas regras, poucos alvos
       p.duelosPorRodada = p.duelosPorRodada.map((n) => Math.max(2, Math.round(n / 6)));
       p.adapt = Math.min(p.adapt, 1);
@@ -51,6 +60,15 @@
   const minutosPrevistos = (ns, adapt, aquec) => ((aquec + ns.reduce((s, n) => s + 4 * (n + adapt), 0)) * 1.05 + ns.length * 4 * 6) / 60;
   // regras de uma sessao (testes antigos nao tinham isso gravado: valem as regras da epoca)
   const psaDa = (s) => s.psa || { W0: LN3, k: 0.25, rho: 0.5, gama: 1 };
+  // faixa (largura em ln) da rodada n: forma livre (uma por rodada, quarta revisao; a rodada extra
+  // repete a ultima) ou geometrica dos testes antigos (W0 na 1a, depois a anterior x rho)
+  const faixaDa = (psa, n, ultW) => (psa.Ws ? psa.Ws[Math.min(n, psa.Ws.length) - 1] : (n === 1 ? psa.W0 : ultW * psa.rho));
+  const listaFaixas = (psa, R) => {
+    const out = [];
+    let W = null;
+    for (let n = 1; n <= R; n++) { W = faixaDa(psa, n, W); out.push('×' + num(Math.exp(W), 2)); }
+    return out;
+  };
   const protocoloDa = (s) => s.protocolo || { duelosPorRodada: [36, 36, 24, 12, 12], duelosExtra: 12, adapt: 3 };
   const pesos = Object.fromEntries(P.estratos.map((e) => [e.id, e.peso]));
   const ESTR = Object.fromEntries(P.estratos.map((e) => [e.id, e]));
@@ -66,6 +84,8 @@
   const fmt3 = (v) => (Math.round(v * 1000) / 1000).toFixed(3);
   const pct = (v, casas = 1) => (v * 100).toFixed(casas).replace('.', ',') + '%';
   const num = (v, casas = 1) => Number(v).toFixed(casas).replace('.', ',');
+  // numero exato da otimizacao, sem zeros sobrando (0,10625; 0,185)
+  const numx = (v) => Number(v).toFixed(5).replace(/0+$/, '').replace(/\.$/, '').replace('.', ',');
   const cm360 = (sens, dpi) => (360 / (0.022 * sens) / dpi) * 2.54;
   const hoje = () => {
     const d = new Date();
@@ -170,14 +190,16 @@
     return { tipo: 'medida', x, lado, rodada, plano: adapt.concat(itens), duelos: [], feito: false };
   }
 
-  function novaSessao(cfg) {
-    const semente = (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
+  function novaSessao(cfg, sementeFixa) {
+    // simulacao (?sim, ?cobertura) passa a semente: deck e ordem iguais a cada vez que roda
+    const semente = sementeFixa != null ? sementeFixa >>> 0 : (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
     const r = Stats.rng(semente);
     const deck = sortearDeck(r);
     // aquecimento so existe se o protocolo tiver alvos para ele (o otimo exato de 12 min e 0)
     const blocos = PROTO.aquec > 0 ? [{ tipo: 'aquec', x: 0, plano: mistura(PROTO.aquec, r, deck), duelos: [], feito: false }] : [];
     const s = { id: semente, data: hoje(), sens0: cfg.sens, dpi: cfg.dpi, formato: cfg.formato, versao: 'psa',
-      psa: { W0: PROTO.W0, k: PROTO.k, rho: PROTO.rho, gama: PROTO.gama, gl0: PROTO.gl0 },
+      psa: PROTO.Ws ? { W0: PROTO.Ws[0], k: PROTO.ks[0], Ws: PROTO.Ws.slice(), ks: PROTO.ks.slice(), gama: PROTO.gama, gl0: PROTO.gl0 }
+        : { W0: PROTO.W0, k: PROTO.k, rho: PROTO.rho, gama: PROTO.gama, gl0: PROTO.gl0 },
       protocolo: { duelosPorRodada: PROTO.duelosPorRodada.slice(), duelosExtra: PROTO.duelosExtra, adapt: PROTO.adapt },
       deck, blocos, rodadas: [], rodadasAlvo: PROTO.rodadas, atual: 0, feito: false, semRaw: false, inicio: Date.now() };
     planejarRodada(s);
@@ -189,12 +211,12 @@
   // B A A B nas pares, para o custo de trocar de sens nao virar evidencia.
   function planejarRodada(s) {
     const psa = psaDa(s), proto = protocoloDa(s);
-    let centro = 0, W = psa.W0;
+    let centro = 0, W = faixaDa(psa, 1, null);
     if (s.rodadas.length) {
       const cam = Stats.caminho(s, pesos);
       const ult = s.rodadas[s.rodadas.length - 1];
       centro = cam.final;
-      W = ult.W * psa.rho;
+      W = faixaDa(psa, s.rodadas.length + 1, ult.W);
     }
     const n = s.rodadas.length + 1;
     const r = Stats.rng((s.id ^ Math.imul(0x9e3779b9, n)) >>> 0);
@@ -232,19 +254,22 @@
   // texto "Como funciona" escrito a partir dos numeros da duracao escolhida
   function explicarProtocolo() {
     const m = Math.exp(PROTO.W0 / 2);
-    const faixas = [];
-    let W = PROTO.W0;
-    for (let i = 0; i < PROTO.rodadas; i++) { faixas.push('×' + num(Math.exp(W), 2)); W *= PROTO.rho; }
+    const faixas = listaFaixas(PROTO, PROTO.rodadas);
     $('como-1').innerHTML = PROTO.aquec > 0
       ? `1. <b>Aquecimento</b> de ${PROTO.aquec} alvos na tua sens (não conta).`
       : `1. <b>Sem aquecimento dentro do teste.</b> Na simulação duelo a duelo, aquecer só gasta tempo: 0 alvos deu a menor perda (20 alvos: +0,004 ponto; 60: +0,007), e mesmo começando 50% mais lento a diferença fica em ±0,01 ponto. Se quiser se sentir quente, aquece no CS antes: não muda a conta.`;
     $('como-2').innerHTML = `2. <b>${PROTO.rodadas} rodadas de PSA, 4 blocos cada.</b> A rodada joga as duas pontas da faixa (A e B) na ordem A B B A (B A A B na seguinte). ` +
       `A 1ª vai de ÷${num(m, 4)} a ×${num(m, 4)} da tua sens. O centro anda para o lado que rendeu mais, <b>na proporção da força da evidência</b>: ` +
-      `força = diferença ÷ (${num(PROTO.gama, 4)} × MDE), entre −1 e 1, e o centro anda força × ${num(PROTO.k, 4)} da faixa. ` +
-      `A faixa encolhe ×${num(PROTO.rho, 4)} por rodada (${faixas.join(', ')}): devagar, para um ruído no começo poder ser corrigido depois. ` +
+      `força = diferença ÷ (${numx(PROTO.gama)} × MDE), entre −1 e 1, e o centro anda força × ` +
+      (PROTO.Ws
+        ? `o passo da rodada (${PROTO.ks.map(numx).join('; ')}) da faixa. A faixa de cada rodada é ${faixas.join(', ')}: ` +
+          `a otimização achou as sondas longe uma da outra o teste todo (a diferença entre duas sens longe aparece mais que o ruído) e o passo do centro caindo rodada a rodada: grande no começo, pequeno no fim. Conferido também com o custo de trocar de sens. `
+        : `${num(PROTO.k, 4)} da faixa. A faixa encolhe ×${num(PROTO.rho, 4)} por rodada (${faixas.join(', ')}): devagar, para um ruído no começo poder ser corrigido depois. `) +
       `Alvos por bloco em cada rodada: <b>${PROTO.duelosPorRodada.join(', ')}</b>. A sens de cada bloco aparece no canto.`;
     $('como-3').innerHTML = `3. Os 4 blocos de uma rodada repetem as <b>mesmas situações</b>, sorteadas das tuas partidas na proporção do peso, em ordem embaralhada e espelhadas ao acaso (o mesmo lado nos 4 blocos). ` +
-      (PROTO.adapt === 1 ? 'O primeiro alvo de cada bloco serve para acostumar e fica de fora.' : `Os ${PROTO.adapt} primeiros alvos de cada bloco servem para acostumar e ficam de fora.`);
+      (PROTO.adapt === 0
+        ? '<b>Todos os alvos contam.</b> Na simulação, separar um alvo por bloco para acostumar com a sens nova custa mais tempo do que ajuda, em todos os cenários testados, inclusive com os primeiros alvos depois da troca 25% mais lentos: a ordem A B B A já cancela quase todo o custo da troca.'
+        : PROTO.adapt === 1 ? 'O primeiro alvo de cada bloco serve para acostumar e fica de fora.' : `Os ${PROTO.adapt} primeiros alvos de cada bloco servem para acostumar e ficam de fora.`);
   }
 
   function atualizarSetup() {
@@ -254,7 +279,7 @@
     $('tempo-info').textContent = `Leva uns ${Math.round(minutosPrevistos(PROTO.duelosPorRodada, PROTO.adapt, PROTO.aquec))} minutos: ` +
       `${PROTO.aquec ? PROTO.aquec + ' de aquecimento e ' : ''}${PROTO.rodadas} rodadas com ${PROTO.duelosPorRodada.join(', ')} alvos por bloco.`;
     $('setup-info').textContent = c.ok
-      ? `cm/360: ${num(cm360(c.sens, c.dpi), 1)} · eDPI: ${Math.round(c.sens * c.dpi)} · 1ª rodada: ${fmt3(c.sens / Math.exp(PROTO.W0 / 2))} contra ${fmt3(c.sens * Math.exp(PROTO.W0 / 2))}, depois a faixa vai afinando (×${num(PROTO.rho, 4)} por rodada)`
+      ? `cm/360: ${num(cm360(c.sens, c.dpi), 1)} · eDPI: ${Math.round(c.sens * c.dpi)} · 1ª rodada: ${fmt3(c.sens / Math.exp(PROTO.W0 / 2))} contra ${fmt3(c.sens * Math.exp(PROTO.W0 / 2))}, depois a faixa vai afinando (${PROTO.Ws ? listaFaixas(PROTO, PROTO.rodadas).slice(1).join(', ') : '×' + num(PROTO.rho, 4) + ' por rodada'})`
       : 'Confere o DPI e a sens.';
     $('btn-comecar').disabled = !c.ok;
   }
@@ -364,7 +389,7 @@
     const txt = bl.tipo === 'aquec'
       ? `${bl.plano.length} alvos na tua sens (${fmt3(sensBloco)}). Não conta para a nota.`
       : `Este bloco: <b>sens ${fmt3(sensBloco)}</b> (${num(cm360(sensBloco, s.dpi), 1)} cm/360). ` +
-        (idx === 1 ? (nAdapt === 1 ? 'O primeiro alvo de cada bloco serve para acostumar e não conta.' : `Os ${nAdapt} primeiros alvos de cada bloco servem para acostumar e não contam.`)
+        (idx === 1 ? (nAdapt === 0 ? 'Todos os alvos do bloco contam.' : nAdapt === 1 ? 'O primeiro alvo de cada bloco serve para acostumar e não conta.' : `Os ${nAdapt} primeiros alvos de cada bloco servem para acostumar e não contam.`)
           : 'Solta o mouse, reposiciona, respira.');
     pausa(titulo, txt, 'Aperta <span class="tecla">Espaço</span> para começar' + (Jogo.estado().travado ? '' : ' (clica antes para travar o mouse)'), () => {
       Jogo.rodarBloco(bl.plano, { sens: sensBloco, rotulo: titulo, progresso: idx / n, canto }, (res) => {
@@ -595,7 +620,7 @@
       rodadasHtml = `
       <h2>Rodadas afinando</h2>
       <div class="painel">${regua(s, cam)}
-        <p class="info">Cada linha é uma rodada: as duas pontas da faixa jogadas em A B B A (ou B A A B), a que rendeu mais em verde. A seta laranja é quanto o centro andou: <b>força × ${num(psaDa(s).k, 4)} da faixa</b>, e a força é a diferença dividida por ${psaDa(s).gama === 1 ? 'MDE' : num(psaDa(s).gama, 4) + ' × MDE'} (MDE = o menor tamanho que separa do acaso com 95%), entre −1 e 1. Depois a faixa é multiplicada por ${num(psaDa(s).rho, 4)}. Nenhum resultado é jogado fora: rodada empatada mexe pouco, rodada decidida mexe muito.</p>
+        <p class="info">Cada linha é uma rodada: as duas pontas da faixa jogadas em A B B A (ou B A A B), a que rendeu mais em verde. A seta laranja é quanto o centro andou: <b>força × ${psaDa(s).ks ? 'o passo da rodada (' + psaDa(s).ks.map(numx).join('; ') + ')' : num(psaDa(s).k, 4)} da faixa</b>, e a força é a diferença dividida por ${psaDa(s).gama === 1 ? 'MDE' : numx(psaDa(s).gama) + ' × MDE'} (MDE = o menor tamanho que separa do acaso com 95%), entre −1 e 1. ${psaDa(s).Ws ? 'A faixa de cada rodada vem do protocolo (' + listaFaixas(psaDa(s), psaDa(s).Ws.length).join(', ') + ').' : 'Depois a faixa é multiplicada por ' + num(psaDa(s).rho, 4) + '.'} Nenhum resultado é jogado fora: rodada empatada mexe pouco, rodada decidida mexe muito.</p>
       </div>
       <div class="painel" style="margin-top:12px;overflow-x:auto"><table>${tr}</table>
         <p class="info" style="margin-top:8px">Diferença e MDE em tempo até matar, com o peso de cada situação. O ruído é medido no próprio dia (as duas vezes que cada sonda foi jogada em cada rodada): ${num(100 * ru.sigma, 1)}% por bloco, com ${ru.gl} graus de liberdade (${ru.medidos} pares medidos + ${ru.gl0} de partida). Ruído do método = até onde o puro acaso levaria o centro, somando as rodadas.</p></div>`;
@@ -679,7 +704,7 @@
         <p class="info" style="margin-top:8px">Flick = o movimento principal até a primeira parada ou volta da mira, nos duelos que começam a mais de 2 cabeças. "Na cabeça" = a mira parou dentro da hitbox; "passou" = parou além dela (mais de 1 cabeça); "curto" = parou antes. Correções = novos movimentos depois do flick. Os tempos são medianas.</p></div>
       <div class="painel" style="margin-top:22px">
         <h3>Quer afinar mais?</h3>
-        <p>Mais uma rodada (4 blocos de ${protocoloDa(s).duelosExtra} alvos, uns ${num(minutosPrevistos([protocoloDa(s).duelosExtra], protocoloDa(s).adapt, 0), 1)} minutos): as duas pontas de uma faixa ${num(psaDa(s).rho, 3)} vezes a última, em volta de ${fmt3(sensDia)}. O resultado continua sendo só de hoje.</p>
+        <p>Mais uma rodada (4 blocos de ${protocoloDa(s).duelosExtra} alvos, uns ${num(minutosPrevistos([protocoloDa(s).duelosExtra], protocoloDa(s).adapt, 0), 1)} minutos): as duas pontas de uma faixa ${psaDa(s).Ws ? 'do mesmo tamanho da última' : num(psaDa(s).rho, 3) + ' vezes a última'}, em volta de ${fmt3(sensDia)}. O resultado continua sendo só de hoje.</p>
         <div class="linha-botoes"><button id="btn-estender"${psa ? '' : ' disabled'}>Jogar mais uma rodada</button></div>
       </div>
       <div class="linha-botoes">
@@ -722,7 +747,7 @@
   }
   function simularSessao(alvo, semente) {
     const cfg = { dpi: 1600, sens: 0.5, formato: 'nativo' };
-    const s = novaSessao(cfg);
+    const s = novaSessao(cfg, Math.imul(semente, 0x9e3779b1) ^ 0x5bd1e995);
     const r = Stats.rng(semente);
     const curv = { fino: 0.30, curto: 0.32, flick: 0.28, medio: 0.25, virada: 0.15, rapido: 0.25 };
     while (true) {

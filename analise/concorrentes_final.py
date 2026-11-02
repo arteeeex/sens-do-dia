@@ -10,7 +10,7 @@ cada rodada, e calcula a sens final de varios jeitos:
   E4  meio a meio entre E0 e E2.
 Perda media de desempenho e erro tipico, no modelo e nos cenarios de ataque.
 
-Uso: python concorrentes_final.py
+Uso: python concorrentes_final.py [desenho.json]   (padrao: o de 12 min; aceita a forma livre)
 """
 import json
 import os
@@ -27,7 +27,9 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 
 def simular_registro(p, s, escala_ruido=1.0, cansaco=True):
     """Como oe.simular, mas guarda cada bloco (x, nota, duelos) e o centro antes/depois de cada rodada."""
-    n, W, k, rho, gam = p["n"], p["W0"], p["k"], p["rho"], p["gam"]
+    n, gam = p["n"], p["gam"]
+    Ws, ks = p.get("Ws"), p.get("ks")       # forma livre (faixa e passo de cada rodada) ou geometrica
+    W, k, rho = (Ws[0] if Ws else p["W0"]), p.get("k", ks[0] if ks else None), p.get("rho", 1.0)
     adapt, aquec, gl0 = p.get("adapt", 1), p.get("aquec", 0), p.get("gl0", 16)
     esc = escala_ruido * (s.escala if s.escala is not None else 1.0)
     N = len(s.x0)
@@ -36,6 +38,8 @@ def simular_registro(p, s, escala_ruido=1.0, cansaco=True):
     kb = 0
     X, Y, NB, C0, C1, G = [], [], [], [], [], []
     for r, nd in enumerate(n):
+        if Ws:
+            W, k = Ws[r], ks[r]
         a, b = c - W / 2, c + W / 2
         ordem = "ABBA" if r % 2 == 0 else "BAAB"
         ys = {"A": [], "B": []}
@@ -100,7 +104,8 @@ def estimadores(reg):
 
 
 def main():
-    p = json.load(open(os.path.join(BASE, "otimo_orcamento_11.8_final.json"), encoding="utf-8"))["desenho"]
+    arq = sys.argv[1] if len(sys.argv) > 1 else os.path.join(BASE, "otimo_orcamento_11.8_final.json")
+    p = json.load(open(arq, encoding="utf-8"))["desenho"]
     cenarios = [("modelo (ruido incerto)", dict(ruido_incerto=True), {}, None),
                 ("curvas que o otimizador nao viu", dict(ruido_incerto=True), {}, "novas"),
                 ("ruido x2", dict(ruido_incerto=False), {"escala_ruido": 2.0}, None),
