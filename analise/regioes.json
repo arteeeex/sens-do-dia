@@ -87,6 +87,38 @@
   "barriga|peito": 45.02,
   "peito|cabeca": 59.87
  },
+ "fronteiras_corrigidas": {
+  "pernas|barriga": {
+   "altura": 30.27,
+   "ic95": [
+    29.57,
+    31.56
+   ],
+   "ponto_50": 29.33,
+   "borrao": 3.45,
+   "inclinacao_log": 0.0787
+  },
+  "barriga|peito": {
+   "altura": 45.88,
+   "ic95": [
+    45.32,
+    46.4
+   ],
+   "ponto_50": 45.02,
+   "borrao": 3.45,
+   "inclinacao_log": 0.0728
+  },
+  "peito|cabeca": {
+   "altura": 59.26,
+   "ic95": [
+    58.94,
+    59.68
+   ],
+   "ponto_50": 59.87,
+   "borrao": 4.08,
+   "inclinacao_log": -0.0361
+  }
+ },
  "erro_de_medida_altura": 4.5,
  "fronteiras_sem_borrao": {
   "pernas|barriga": {
@@ -94,21 +126,24 @@
    "ic95": [
     26.33,
     32.33
-   ]
+   ],
+   "ic_pelo_menos_3": true
   },
   "barriga|peito": {
    "altura": 47.52,
    "ic95": [
     44.52,
     50.52
-   ]
+   ],
+   "ic_pelo_menos_3": true
   },
   "peito|cabeca": {
    "altura": 59.87,
    "ic95": [
     56.87,
     62.87
-   ]
+   ],
+   "ic_pelo_menos_3": true
   }
  },
  "cabeca_mediana_perto_do_eixo": 62.88

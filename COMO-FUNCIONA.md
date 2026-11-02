@@ -30,9 +30,25 @@ Demos novas? Baixa no CS2 (Assistir → Tuas partidas) e roda **`Atualizar pesos
 
 Ficam de fora faca, granada, AWP e scout (luneta é outra sens). Sobram **702 duelos**. De cada um sai: onde a tua mira estava em relação à cabeça dele, a altura da tua mira (pitch) no começo, a distância, como ele andou na tua tela (até 2,5 s a 32 quadros por segundo, já somando o teu próprio movimento) e os tempos de cada um.
 
-**Caminho do alvo até o fim (revisão de 01/11/2026).** O caminho real acaba quando alguém morre: em 65% dos duelos isso acontece antes de 1,5 s (mediana 0,72 s). Antes, se tu demorasse mais que o duelo real, o boneco congelava e ficava mais fácil que no jogo. Agora, quando o caminho real acaba, o boneco segue com o movimento de **outro inimigo real das tuas demos que ainda estava vivo naquele mesmo instante**. O doador estava na mesma faixa de distância (inimigo de perto não anda como inimigo de longe) e se movia na velocidade mais parecida (mesmo tipo de duelo). O passo é emendado em unidades do jogo, de lado e de aproximação, e o alvo nunca chega mais perto que o duelo mais perto das demos (50 unidades). Se o doador também acaba, entra outro, até 2,5 s (mediana de 1 emenda por situação, no máximo 7). É determinístico: a mesma situação sempre anda igual, então A e B veem o mesmo alvo.
+**Caminho do alvo até o fim (revisão de 01/11/2026).** O caminho real acaba quando alguém morre: em 65% dos duelos isso acontece antes de 1,5 s (mediana 0,72 s). Antes, se tu demorasse mais que o duelo real, o boneco congelava e ficava mais fácil que no jogo. Agora, quando o caminho real acaba, o boneco segue com o movimento de **outro inimigo real das tuas demos que ainda estava vivo naquele mesmo instante**. O doador estava na mesma faixa de distância (inimigo de perto não anda como inimigo de longe), no mesmo tipo de duelo, e é aquele cujo **próximo passo mais parece o último passo real do alvo** (em unidades por segundo), para a costura não aparecer. O passo é emendado em unidades do jogo, de lado e de aproximação, e o alvo nunca chega mais perto que o duelo mais perto das demos (50 unidades). Se o doador também acaba, entra outro, até 2,5 s (mediana de 1 emenda por situação, no máximo 8). É determinístico: a mesma situação sempre anda igual, então A e B veem o mesmo alvo.
 
-Conferência da emenda: a velocidade em unidades do jogo bate com a real (mediana 96 contra 103 u/s, 90% abaixo de 239 contra 253). Em graus por segundo o trecho emendado é um pouco mais rápido (mediana 8,8 contra 7°/s) só porque os duelos que acabam cedo são os de perto (650 contra 1.030 unidades), e de perto o mesmo passo vira mais graus. Na mediana a emenda nem aproxima o alvo (fica em 96% da distância); só 10 de 702 situações passam de 100 unidades por causa dela. Velocidade do alvo real na tela: mediana 7°/s, 90% abaixo de 21°/s, 99% abaixo de 58°/s.
+Conferência da emenda: a velocidade em unidades do jogo bate com a real (mediana 93 contra 103 u/s, 90% abaixo de 244 contra 253). Em graus por segundo o trecho emendado é um pouco mais rápido (mediana 8,3 contra 7°/s) só porque os duelos que acabam cedo são os de perto (651 contra 1.032 unidades), e de perto o mesmo passo vira mais graus. Na mediana a emenda não aproxima o alvo (fica em 100% da distância); 15 de 702 situações passam de 100 unidades por causa dela e encostam no piso de 50 (o alvo para de chegar perto). Na costura, a velocidade pula 1,0°/s (mediana; entre duas amostras reais seguidas: 1,1). Velocidade do alvo real na tela: mediana 7°/s, 90% abaixo de 21°/s, 99% abaixo de 58°/s. No trecho emendado, 1,7% das amostras passam de 100°/s (no real, 0,25%), mas por faixa de distância a emenda anda igual ao real (de 300 a 600 unidades: mediana 11,6 e 99% abaixo de 47,7°/s, contra 12,2 e 47,9 no real; de 600 a 1.200: 6,4 / 31,0 contra 6,5 / 27,8): a diferença vem de os duelos que acabam cedo, e por isso ganham emenda, serem os de perto.
+
+**Concorrentes da continuação (terceira revisão, `analise/concorrentes_caminho.py`).** Corta os caminhos reais dos inimigos que ficaram vivos os 2,5 s (199 caminhos, cortes de 0,25 a 1,5 s), esconde o resto e deixa cada método continuar por 0,75 s. O que conta é o jeito do movimento (a dificuldade), não acertar o ponto: compara com o futuro de verdade pela distância de Kolmogorov-Smirnov (0 = igual, 1 = nada a ver) em velocidade na tela, deslocamento em 0,5 s, tranco (mudança de velocidade entre amostras: o zigue-zague) e salto de velocidade na costura.
+
+| Método | Velocidade | Deslocamento | Tranco | Salto | **Média** |
+|---|---|---|---|---|---|
+| **Emenda casando o próximo passo (atual)** | 0,063 | 0,103 | 0,020 | 0,100 | **0,071** |
+| Emenda casando o próximo passo e a velocidade média | 0,065 | 0,098 | 0,057 | 0,090 | 0,077 |
+| Emenda misturando o passo nas 2 primeiras amostras | 0,063 | 0,095 | 0,016 | 0,144 | 0,080 |
+| Emenda antiga (velocidade média dos 2 últimos passos) | 0,065 | 0,090 | 0,023 | 0,268 | 0,112 |
+| Mistura de 4 / 8 amostras | — | — | — | — | 0,126 / 0,177 |
+| Processo aleatório que volta a zero (OU, ajustado nos caminhos) | 0,079 | 0,077 | 0,326 | 0,363 | 0,211 |
+| Doador sorteado (sem casar o movimento) | 0,056 | 0,087 | 0,023 | 0,752 | 0,230 |
+| Segue com a velocidade caindo (melhor meia-vida: 1 s) | 0,143 | 0,037 | 0,705 | 0,250 | 0,284 |
+| Congela | 0,995 | 1,000 | 0,995 | 0,644 | 0,909 |
+
+Sorteando os caminhos 300 vezes, a emenda nova ganha da antiga em 100% dos sorteios (diferença de 0,021 a 0,060); as duas seguintes empatam com ela dentro do sorteio e ficam atrás na média. Quem só segue a velocidade acerta melhor o ponto, mas anda liso demais (sem zigue-zague): fica fácil. Para a distância (`concorrentes_radial.py`, 1.449 cortes, entrando os alvos de perto), chegar perto **em unidades** (atual) ganha de chegar perto **em proporção** em 99% dos sorteios, inclusive abaixo de 500 unidades.
 
 ### 2.2 As situações e os pesos
 
@@ -64,7 +80,7 @@ O intervalo vem de 1000 reamostragens dos duelos, refazendo o Kaplan-Meier em ca
 
 ### 2.3 Os pesos aguentam erro? (`analise/pesos_robustez.py`)
 
-Nenhum peso é 100% certo. O que dá para medir é quanto um erro nele mexe na sens. Calculei de quatro jeitos objetivos e sorteei 1000 vezes as demos:
+Nenhum peso é 100% certo. O que dá para medir é quanto um erro nele mexe na sens. Calculei de cinco jeitos objetivos (o E entrou na terceira revisão), mexi na suavização e sorteei 1000 vezes as demos:
 
 | Jeito | fino | curto | flick | médio | virada | rápido |
 |---|---|---|---|---|---|---|
@@ -72,25 +88,44 @@ Nenhum peso é 100% certo. O que dá para medir é quanto um erro nele mexe na s
 | B) corrida pela kill | 26,4 | 15,5 | 18,1 | 12,0 | 6,5 | 21,5 |
 | C) curva do inimigo única | 28,7 | 30,5 | 16,8 | 8,1 | 3,5 | 12,4 |
 | D) só frequência (média simples) | 29,6 | 25,5 | 16,2 | 9,7 | 8,5 | 10,4 |
+| E) impacto no round (WPA, `analise/pesos_wpa.py`) | 25,9 | 24,8 | 17,1 | 12,1 | 3,9 | 16,2 |
+| A com a suavização pela metade / em dobro | 26,2 / 23,4 | 26,1 / 27,3 | 17,3 / 18,2 | 11,9 / 11,8 | 4,3 / 4,7 | 14,1 / 14,5 |
 
-Efeito na sens, supondo que o melhor ponto de cada situação varia 20% entre elas: trocar A por B muda a sens em **2,9%** (típico) e custa **0,023%** de desempenho. A incerteza do próprio A (1000 sorteios) mexe **1,15%** e custa 0,004%. O ruído do próprio teste (erro típico de 7,7% no desenho de 12 min) custa **~0,16%**, 7 a 40 vezes mais. Fica o A: a faixa de incerteza dele é pouco mais da metade da do B (10,2 contra 18,0 pontos), e nas tuas demos quem dá o primeiro dano ganha **76%** dos duelos decididos (87% quando és tu).
+Efeito na sens, supondo que o melhor ponto de cada situação varia 20% entre elas: trocar A por B muda a sens em **2,9%** (típico) e custa **0,023%** de desempenho. A largura da suavização (Silverman) pela metade ou em dobro muda a sens só **0,34%** (0,0003%), um terço do sorteio do próprio A: qualquer regra de largura dá a mesma resposta. A incerteza do próprio A (1000 sorteios) mexe **1,15%** e custa 0,004%. O ruído do próprio teste (erro típico de 7,7% no desenho de 12 min) custa **~0,16%**, 7 a 40 vezes mais. Fica o A: a faixa de incerteza dele é pouco mais da metade da do B (10,2 contra 18,0 pontos), e nas tuas demos quem dá o primeiro dano ganha **76%** dos duelos decididos (87% quando és tu).
+
+**E) Impacto no round (terceira revisão).** O objetivo de verdade é ganhar round, não duelo: vencer um 1x1 vale o round inteiro, um 5x5 no começo vale menos. O E multiplica o valor de cada duelo pela diferença na chance de ganhar o round entre vencer e perder aquele duelo, pelos vivos de cada lado e a bomba no momento. A chance sai de uma logística ajustada nos **4.904 estados de round** das tuas 15 demos, os dois times (exemplos, lado CT sem bomba: 5x5 56%, 5x4 77%, 4x5 34%, 2x1 90%, 1x2 15%). Resultado: cada situação mexe no round quase o mesmo tanto (média de 0,31 no ajuste curto a 0,37 na virada), então os pesos ficam dentro do sorteio do A (toda diferença tem intervalo passando por zero). Se o certo for o E e o app usar o A, a sens muda 0,62% e custa 0,0011%; o E é mais ruidoso (1,28% contra 1,10%). Perda esperada contra o objetivo do round: **A 0,0044%** (viés + sorteio) contra **E 0,0045%** (só sorteio). Empate, e o A fica: é o mais simples e já mira o round certo.
 
 ### 2.4 Cabeça, corpo e dano
 
 **Hitboxes oficiais.** Extraídas da tua instalação com o Source 2 Viewer 20.1 (`agents/models/ctm_fbi`, grupo `physics_group_playerflesh`, 35 peças: cápsulas e esferas nas juntas). Script: `analise/hitboxes_cs2.py`. O boneco que aparece é essa hitbox, não o modelo visual: por isso parece um boneco de massinha e não o agente do jogo.
 
 - **Cabeça: esfera de raio 5,0** (10 de diâmetro). A medida independente pelos 85 tiros na cabeça nas tuas demos (vítimas paradas) deu meia-largura **5,01**.
-- **Postura do jogo medida nas demos** (`analise/medir_regioes.py` → `regioes.json`). O arquivo vem em pé reto e de braços abertos. Para achar a postura de jogo, peguei **4.901 balas** de todo mundo nas 15 demos que acertaram alguém em pé, sem atravessar parede. O ponto do acerto é o olho do atirador + a direção da bala × a distância percorrida, e a parte do corpo vem do `player_hurt`. A posição na demo tem um erro de ~4 unidades de altura (compensação de lag), então a fronteira entre duas partes sai por máxima verossimilhança com esse borrão no modelo:
+- **Postura do jogo medida nas demos** (`analise/medir_regioes.py` → `regioes.json`). O arquivo vem em pé reto e de braços abertos. Para achar a postura de jogo, peguei **4.901 balas** de todo mundo nas 15 demos que acertaram alguém em pé, sem atravessar parede. O ponto do acerto é o olho do atirador + a direção da bala × a distância percorrida, e a parte do corpo vem do `player_hurt`. A posição na demo tem um erro de ~3,5 unidades de altura (compensação de lag). Esse borrão empurra o ponto de 50% (probit) para o lado da parte com menos tiros, então a fronteira sai do **probit corrigido pela inclinação da densidade dos tiros** (fórmula de Tweedie, terceira revisão): se perto da fronteira o log da densidade dos tiros sobe b por unidade, o ponto de 50% cai b × s² abaixo dela, com s = o borrão, que o próprio probit mede pela largura. Fronteira = ponto de 50% + b × s²; o b sai de todos os tiros numa janela em volta da fronteira:
 
 | Fronteira (altura acima do pé) | Medida |
 |---|---|
-| pernas → barriga | **28,8** (os dois métodos dão 29,3 no jeito de medir das demos) |
-| barriga → peito | **45,7** (45,0 pelo probit simples, 47,5 tirando o borrão; fica no meio. Só decide 3 ou 4 tiros a menos de ~16 m) |
+| pernas → barriga | **29,71** (30,27 no jeito de medir das demos, IC 95% 29,57–31,56; o ponto de 50% sem correção dá 29,33. Antes: 28,77) |
+| barriga → peito | **45,32** (45,88 nas demos, IC 95% 45,32–46,40; sem correção 45,02. Antes: 45,71, o meio entre 45,0 e 47,5. Só decide 3 ou 4 tiros a menos de ~16 m) |
 | centro da cabeça | **62,3** (1,28 abaixo do olho em pé, 63,6) |
 
-  As alturas das demos são medidas com o olho do atirador a 64,06; o app usa 63,6, por isso tudo desce ~0,5 na conversão. O ajuste sem borrão tem incerteza larga (±3 ou mais) porque só a altura não separa bem o borrão da forma da distribuição dos tiros. Por isso as duas medidas aparecem lado a lado.
+  As alturas das demos são medidas com o olho do atirador a 64,06; o app usa 63,6, por isso tudo desce ~0,5 na conversão.
 
-  O boneco (`analise/boneco.py` → `app/boneco.js`) usa os raios oficiais. A barriga e a ponta de baixo do peito vão para essas alturas, e as pernas encolhem para 82% na vertical (joelho dobrado) até o quadril ficar no lugar medido. Os braços seguram a arma; braço leva o mesmo dano do peito com colete, então a posição exata dele não muda a conta. Antes eu tinha chutado pernas 30% mais curtas, o que deixava a barriga 5 unidades baixa demais. Prévias: `analise/boneco_frente.png` e `boneco_lado.png`.
+  **Concorrentes da fronteira (terceira revisão, `analise/concorrentes_regioes.py`).** Simulação com a fronteira verdadeira conhecida (sorteada a ±2 da medida), o mesmo número de balas perto do eixo (1.361), densidade de tiros tirada das demos (alisada ou desborrada) e 4 tipos de borrão (normal 4,5; normal 3; cauda pesada; borrão variando de 2 a 7 por bala). 8 cenários × 40 sorteios. Erro típico, em unidades de altura:
+
+| Método | pernas → barriga | barriga → peito | peito → cabeça | média |
+|---|---|---|---|---|
+| **Probit corrigido (Tweedie, janela ±6)** | **0,93** | **0,41** | **0,43** | **0,59** |
+| Probit sem correção | 1,19 | 1,14 | 0,71 | 1,01 |
+| Meio a meio probit e EM (o que valia na barriga → peito) | 1,19 | 1,12 | 0,82 | 1,04 |
+| Máxima verossimilhança com densidade livre (EM; o que valia na pernas → barriga) | 1,45 | 1,42 | 1,23 | 1,37 |
+| O mesmo EM com todos os candidatos nas mesmas iterações | 3,21 | 2,76 | 2,55 | 2,84 |
+| **Probit corrigido com a janela otimizada (30 / 12,75 / 19,25), sorteios que não escolheram a janela** | **0,82** | **0,31** | **0,28** | **0,47** |
+
+  O probit sem correção erra para o lado com menos tiros (viés de −1 a −1,4 na barriga → peito em todos os cenários); o corrigido fica a ±0,2 dela. O EM tem a verossimilhança quase chata (IC de ±3 ou mais): só a altura não separa bem o borrão da forma da distribuição, e com cauda pesada ele desaba. No `regioes.json` o probit e o EM continuam saindo, só para comparar.
+
+  **Janela da inclinação (número exato).** O b sai de todos os tiros numa janela de ±w em volta da fronteira. O w foi otimizado na mesma simulação, com sorteios próprios (`concorrentes_regioes.py janela`, w de 2 a 30, de 0,25 em 0,25): **pernas → barriga 30** (o erro cai até a janela encostar no pé, que é o limite físico: essa fronteira fica a ~30 do chão), **barriga → peito 12,75** (empata a menos de 1% de 12,75 a 13,5) e **peito → cabeça 19,25** (16 a 20,25). Conferido nos sorteios da comparação, que não foram usados para escolher (`validar`): erro 0,82 / 0,31 / 0,28 contra 0,93 / 0,41 / 0,43 com ±6. Nas demos, apertar ou alargar em 3 as janelas do probit ou trocar o corte do eixo do corpo (2,5 a 4,5) mexe a barriga → peito no máximo 0,43 e a pernas → barriga até 1,22 (só 73 tiros de perna perto do eixo), sempre dentro do IC.
+
+  O boneco (`analise/boneco.py` → `app/boneco.js`) usa os raios oficiais. A barriga e a ponta de baixo do peito vão para essas alturas, e as pernas encolhem para 85% na vertical (joelho dobrado) até o quadril ficar no lugar medido. Os braços seguram a arma; braço leva o mesmo dano do peito com colete, então a posição exata dele não muda a conta. Antes eu tinha chutado pernas 30% mais curtas, o que deixava a barriga 5 unidades baixa demais. Prévias: `analise/boneco_frente.png` e `boneco_lado.png`.
 - **Dano da AK-47** (`analise/medir_dano.py` → `dano.json`), conferido em 449 acertos de AK nas demos com a vítima de vida cheia. A conta do CS2 bate **exata em 85%**; o resto é bala atravessando parede:
 
 ```
@@ -293,6 +328,10 @@ No app completo (300 dias simulados): **erro típico de 10,8%**, ruído do méto
 | `analise/otimizar_exato.py` (`orcamento`, `polir`), `otimizar_adapt.py`, `otimizar_gl0.py`, `robustez_desenho.py` | Números exatos de cada duração e a robustez deles (`otimo_orcamento_*_final.json`) |
 | `analise/medir_tempos.py`, `cortes_robustez.py`, `sensibilidade_extracao.py` | Limite por alvo e espera (demos), cortes das situações, números que definem um duelo |
 | `analise/comparar_*.py`, `otimizar_psa.py` (`frente`, `aquecimento`, `tamanho`) | Simulações do desenho antigo (histórico) |
+| `analise/concorrentes_final.py`, `concorrente_bayes.py`, `concorrente_aurea.py`, `concorrentes_nota.py` | Métodos concorrentes (terceira revisão): conta final da sens, PSA bayesiano, seção áurea, nota do bloco |
+| `analise/concorrentes_caminho.py`, `concorrentes_radial.py` | Concorrentes da continuação do caminho do alvo (tela e distância), contra o futuro real escondido |
+| `analise/concorrentes_regioes.py` | Concorrentes da medida das fronteiras do corpo (simulação com a fronteira conhecida) |
+| `analise/pesos_wpa.py` | Pesos pelo impacto no round (`pesos_wpa.json`) |
 | Source 2 Viewer CLI 20.1 | Usado uma vez para tirar as hitboxes (resultado salvo em `analise/hitboxes_cs2.json`). A pasta `ferramentas/` foi apagada na limpeza; para re-extrair as hitboxes, baixar de novo do GitHub do ValveResourceFormat |
 
 Os dados ficam no navegador (`localStorage`, chave `sens-do-dia/v1`). O histórico é só consulta. A mira é gravada no máximo a cada 6 ms (144 Hz grava todo quadro, 240 Hz um sim e um não): uma sessão inteira dá ~1,6 milhão de caracteres. Se o navegador ficar sem espaço, o app salva sem a trajetória quadro a quadro (a sens do dia não muda) e avisa no resultado para exportar o JSON.
@@ -334,3 +373,22 @@ Os dados ficam no navegador (`localStorage`, chave `sens-do-dia/v1`). O históri
 | Os números que definem um duelo nas demos importam? (tiro conta como "nele" a menos de 4° da cabeça; piscada do "visto" de até 4 ticks é o mesmo duelo; `analise/sensibilidade_extracao.py`) | 2° ou 8°: 688 ou 710 duelos, sens muda 0,19% / 0,29%. 2 ou 8 ticks: nada muda (0,00%) | não |
 | A largura da suavização tinha número chutado? | Tinha (0,15 s fixo e piso de 0,03 s). Agora é Silverman, uma por tipo de duelo; pesos quase iguais, faixas mais estreitas | sim |
 | Teste sem aquecimento funciona? | Não funcionava: um bloco de aquecimento vazio nunca terminava. Agora o bloco nem é criado, e bloco sem alvo é pulado; a contagem "bloco X de Y" também foi corrigida | sim |
+
+### Terceira revisão (métodos concorrentes)
+
+As revisões anteriores otimizaram os **números** de cada método. Esta põe **outros métodos** contra os atuais, área por área, no mesmo critério e com os mesmos sorteios (ou os mesmos dados). Fica o que ganhar; empate fica o mais simples.
+
+| Área | Concorrentes | Resultado | Mudou? |
+|---|---|---|---|
+| Conta final da sens (`concorrentes_final.py`; 200 mil dias por cenário, 4 cenários) | centro depois da última rodada (atual); média dos centros a partir da rodada 2, 3, 4 ou 5 (Polyak-Ruppert); média ponderada pela rodada; parábola com os 24 blocos; reta das inclinações; meio a meio com a parábola | perda média: **atual 0,2558%**; o melhor concorrente (média das rodadas 5–6) 0,2596%; parábola 0,4847%. A média ajuda só com ruído ×2, por 0,001 ponto | não |
+| Método da rodada (`concorrente_bayes.py`, `concorrente_aurea.py`; 20 mil dias novos por cenário) | PSA (atual); PSA bayesiano: guarda a chance de cada (melhor sens, curvatura de cada lado), joga as pontas em volta da mediana, decide no fim pelo menor prejuízo esperado (18 ajustes); busca pela seção áurea, dura e com teste (24 ajustes) | perda média nos 4 cenários: **PSA 0,2564%**, bayesiano 0,3178%, seção áurea 1,4369%. O bayesiano só ganha (−0,007 ponto) com a melhor sens muito longe e perde muito com ruído ×2 (+0,18): ele confia no formato de curva que supôs. A seção áurea sonda perto do centro (sinal fraco) e um corte errado não volta | não |
+| Nota do bloco (`concorrentes_nota.py`; duelo a duelo, 5 tipos de ruído: normal, cauda pesada, 5% e 15% de alvos perdidos por azar, alvos perdidos por causa da sens) | média de ln(tempo) (atual); média aparada 10% e 20%; mediana; média do tempo sem log; média da velocidade (1/tempo) | **atual 0,1761%**; aparada 10% +0,0016 ± 0,0003; aparada 20% +0,0029; velocidade +0,0073; mediana +0,0213; tempo sem log +0,0359. A aparada só ganha com cauda pesada e a velocidade só com muitos alvos perdidos; na média, todos perdem | não |
+| Pesos (`pesos_wpa.py`, 2.3) | impacto no duelo (atual) contra impacto no round (WPA) | cada situação mexe no round quase o mesmo tanto (0,31 a 0,37); perda esperada contra o objetivo do round: atual 0,0044%, WPA 0,0045% | não |
+| Suavização da curva do inimigo (`pesos_robustez.py`, 2.3) | Silverman (atual) contra a metade e o dobro da largura | a sens muda 0,34%, um terço do sorteio dos próprios pesos | não |
+| Continuação do caminho do alvo (`concorrentes_caminho.py`, 2.1) | 12 jeitos: emendas com 6 regras de casar o doador, processo aleatório ajustado, velocidade caindo (8 meias-vidas), congelar | **emenda casando o próximo passo: 0,071** contra 0,112 da antiga (ganha em 100% dos sorteios); a costura deixou de aparecer (salto 2,9 → 1,0°/s) | **sim** |
+| Aproximação do alvo na continuação (`concorrentes_radial.py`) | em unidades (atual) contra em proporção | unidades ganha em 99% dos sorteios, inclusive de perto | não |
+| Fronteiras do corpo (`concorrentes_regioes.py`, 2.4; 8 cenários × 40 sorteios com a fronteira conhecida) | probit sem correção; probit corrigido pela inclinação (Tweedie); máxima verossimilhança com densidade livre (EM) e a versão com iterações iguais; meio a meio probit e EM | erro típico médio: **Tweedie 0,59**, com a janela otimizada **0,47**; probit 1,01; meio a meio (o que valia no peito) 1,04; EM (o que valia na perna) 1,37 | **sim**: barriga → peito 45,71 → 45,32 e fim da barriga 28,77 → 29,71 (IC de ±0,5 a ±1, contra ±3 do EM) |
+
+O que não tem concorrente para medir: a definição do duelo (já variada na segunda revisão), o limite de 2,5 s e a espera de 450 ms (seção 5), e o que depende do teu teste exportado (ruído real, cansaço real).
+
+**Ataques refeitos depois das duas mudanças:** sessão inteira de 12 min com o bot (24 blocos, 6 rodadas, 512 duelos, resultado na tela, nenhum erro); raios no boneco trocando de parte exatamente nas alturas novas; cobertura no app igual (`?cobertura=300`: 97,7%, erro típico 7,9%); ataque estatístico do desenho de 12 min igual (ganha do antigo nos 8 cenários); caminhos novos com a parte real idêntica nas 702 situações; pipeline inteiro refeito do zero a partir das demos dando os mesmos arquivos. O desenho de 12 min e o código do app não mudaram, então o certificado de ótimo local continua valendo.

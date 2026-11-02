@@ -9,13 +9,19 @@ referencia, em pe reto e de bracos abertos).
 
 A posicao do alvo na demo nao e a da compensacao de lag, entao a altura medida tem um erro
 (cerca de 3,5 unidades). O erro borra as fronteiras e empurra o ponto de 50% para o lado da
-parte com menos tiros. Para tirar isso, a fronteira sai por maxima verossimilhanca com o
-borrao no modelo: altura verdadeira com densidade livre (histograma de 0,5 em 0,5, por EM),
-parte do corpo dada pela altura verdadeira, altura medida = verdadeira + erro normal.
+parte com menos tiros. A fronteira usada (fronteiras_corrigidas) e o ponto de 50% do probit
+corrigido pela formula de Tweedie: se a densidade dos tiros tem inclinacao b no log perto da
+fronteira, o ponto de 50% cai b*s^2 abaixo dela (s = borrao, medido pela largura do proprio
+probit; b de todos os tiros numa janela em volta da fronteira, JANELA_INCLINACAO). Fronteira =
+ponto de 50% + b*s^2, com IC por 200 sorteios das balas. Ganhou dos outros jeitos em simulacao
+com a fronteira conhecida (concorrentes_regioes.py, 01/11/2026).
+Ficam tambem, para comparar: o probit sem correcao e a maxima verossimilhanca com densidade
+livre (EM; verossimilhanca quase chata, IC de +-3 ou mais).
 
 Uso: python medir_regioes.py <pasta_das_demos> <saida.json>
 """
 import glob
+import math
 import json
 import os
 import sys
@@ -117,16 +123,60 @@ def ajustar(z, lab, c0):
 
 
 def probit_simples(z, y, c0):
-    """Ponto de 50% de P(parte de cima | altura medida), sem tirar o borrao (logistica em grade)."""
+    """Ponto de 50% de P(parte de cima | altura medida), sem tirar o borrao (logistica em grade).
+    Devolve o ponto e a largura (com o fator 1,702 a largura e o desvio do borrao)."""
     cs = np.arange(c0 - 8, c0 + 8, 0.05)
-    melhor, arg = -np.inf, c0
+    melhor, arg, arg_s = -np.inf, c0, 4.0
     for sg in np.exp(np.linspace(np.log(0.3), np.log(8), 40)):
         q = np.clip(1 / (1 + np.exp(-1.702 * (z[None, :] - cs[:, None]) / sg)), 1e-9, 1 - 1e-9)
         ll = (y[None, :] * np.log(q) + (1 - y[None, :]) * np.log(1 - q)).sum(axis=1)
         i = int(np.argmax(ll))
         if ll[i] > melhor:
-            melhor, arg = ll[i], float(cs[i])
-    return arg
+            melhor, arg, arg_s = ll[i], float(cs[i]), float(sg)
+    return arg, arg_s
+
+
+JANELAS = ((0, (15, 45)), (1, (35, 56)), (2, (50, 68)))
+FRONTEIRAS = ["pernas|barriga", "barriga|peito", "peito|cabeca"]
+# janela (+-w) da inclinacao de cada fronteira: a de menor erro em simulacao com a fronteira conhecida
+# (concorrentes_regioes.py janela, grade de 0,25 em 0,25 ate 30; conferida em sorteios separados com
+# `validar`: erro 0,82 / 0,31 / 0,28 contra 0,93 / 0,41 / 0,43 com +-6). Na pernas|barriga o erro cai
+# ate a janela encostar no pe (w = 30, o limite fisico: a fronteira fica a ~30 do chao).
+JANELA_INCLINACAO = (30.0, 12.75, 19.25)
+
+
+def probits(z, lab):
+    """Probit de cada fronteira, so com as duas partes vizinhas dentro da janela de altura."""
+    out = []
+    for k, jan in JANELAS:
+        m = ((lab == k) | (lab == k + 1)) & (z > jan[0]) & (z < jan[1])
+        out.append(probit_simples(z[m], (lab[m] == k + 1).astype(float), float(np.median(z[m]))))
+    return out
+
+
+def inclinacao_log(z_todos, centro, w=6.0):
+    """b = derivada do log da densidade de TODOS os tiros perto do centro: exponencial truncada em
+    [centro-w, centro+w] por maxima verossimilhanca (media observada = media do modelo)."""
+    x = z_todos[(z_todos > centro - w) & (z_todos < centro + w)] - centro
+    if len(x) < 20:
+        return 0.0
+    m = x.mean()
+
+    def media(b):
+        if abs(b) < 1e-6:
+            return b * w * w / 3
+        return w / math.tanh(b * w) - 1 / b
+    lo, hi = -2.0, 2.0
+    for _ in range(80):
+        b = (lo + hi) / 2
+        lo, hi = (b, hi) if media(b) < m else (lo, b)
+    return (lo + hi) / 2
+
+
+def corrigidas(z, lab, pr=None):
+    """Fronteira = ponto de 50% + b * s^2 (Tweedie), b na janela de cada fronteira."""
+    pr = pr or probits(z, lab)
+    return [c + inclinacao_log(z, c, JANELA_INCLINACAO[k]) * s * s for k, (c, s) in enumerate(pr)]
 
 
 def main():
@@ -144,13 +194,23 @@ def main():
     z = E["altura"].to_numpy(float)
     lab = E["hitgroup"].map(ROTULO).to_numpy(int)
     # 1) probit simples de cada fronteira (borrado: puxa para o lado da parte com menos tiros)
-    simples = []
-    for k, jan in ((0, (15, 45)), (1, (35, 56)), (2, (50, 68))):
-        m = ((lab == k) | (lab == k + 1)) & (z > jan[0]) & (z < jan[1])
-        simples.append(probit_simples(z[m], (lab[m] == k + 1).astype(float), float(np.median(z[m]))))
-    out["fronteiras_probit"] = {n: round(v, 2) for n, v in zip(["pernas|barriga", "barriga|peito", "peito|cabeca"], simples)}
+    pr = probits(z, lab)
+    simples = [c for c, _ in pr]
+    out["fronteiras_probit"] = {n: round(v, 2) for n, v in zip(FRONTEIRAS, simples)}
     print(f"\nprobit simples: {out['fronteiras_probit']}")
-    # 2) maxima verossimilhanca com o borrao no modelo
+    # 2) probit corrigido pela inclinacao da densidade (Tweedie): e o que o boneco usa
+    tw = corrigidas(z, lab, pr)
+    rng = np.random.default_rng(20261101)
+    boot = np.array([corrigidas(z[ix], lab[ix]) for ix in (rng.integers(0, len(z), len(z)) for _ in range(200))])
+    out["fronteiras_corrigidas"] = {}
+    print("\nprobit corrigido (Tweedie), o que o boneco usa:")
+    for k, nome in enumerate(FRONTEIRAS):
+        b = inclinacao_log(z, pr[k][0], JANELA_INCLINACAO[k])
+        ic = [round(float(q), 2) for q in np.quantile(boot[:, k], [0.025, 0.975])]
+        out["fronteiras_corrigidas"][nome] = {"altura": round(tw[k], 2), "ic95": ic, "ponto_50": round(pr[k][0], 2),
+                                              "borrao": round(pr[k][1], 2), "inclinacao_log": round(b, 4)}
+        print(f"  {nome:16s} {tw[k]:6.2f}  (IC 95% {ic[0]} a {ic[1]}; ponto de 50% {pr[k][0]:.2f} + {b:+.4f} x {pr[k][1]:.2f}^2)")
+    # 3) para comparar: maxima verossimilhanca com o borrao no modelo e densidade livre (EM)
     c, sg = ajustar(z, lab, simples)
     ll0 = em_fronteiras(z, lab, c, sg)
     out["erro_de_medida_altura"] = round(sg, 2)

@@ -79,12 +79,18 @@ def main():
     saida_js, pasta = sys.argv[3], sys.argv[4]
     # alturas medidas (relativas ao centro da cabeca = mediana dos acertos de cabeca no eixo)
     ref = rg["cabeca_mediana_perto_do_eixo"]
-    fr = rg["fronteiras_sem_borrao"]
-    base_barriga = fr["pernas|barriga"]["altura"] - ref
-    # barriga|peito: o probit simples e o ajuste sem borrao discordam um pouco (45 contra 48 nas
-    # 15 demos de 2026); fica no meio dos dois. So decide 3 ou 4 tiros a menos de ~16 m.
-    simples = rg.get("fronteiras_probit", {}).get("barriga|peito", fr["barriga|peito"]["altura"])
-    juncao = 0.5 * (simples + fr["barriga|peito"]["altura"]) - ref
+    fc = rg.get("fronteiras_corrigidas")
+    if fc:
+        # probit corrigido pela inclinacao da densidade dos tiros (Tweedie): ganhou do probit, do EM
+        # e do meio a meio em simulacao com a fronteira conhecida (concorrentes_regioes.py, 01/11/2026).
+        # barriga|peito so decide 3 ou 4 tiros a menos de ~16 m.
+        base_barriga = fc["pernas|barriga"]["altura"] - ref
+        juncao = fc["barriga|peito"]["altura"] - ref
+    else:   # regioes.json de antes da terceira revisao
+        fr = rg["fronteiras_sem_borrao"]
+        base_barriga = fr["pernas|barriga"]["altura"] - ref
+        simples = rg.get("fronteiras_probit", {}).get("barriga|peito", fr["barriga|peito"]["altura"])
+        juncao = 0.5 * (simples + fr["barriga|peito"]["altura"]) - ref
     P = hb["pecas"]
     esferas = [p for p in P if abs(p["comprimento_total"] - 2 * p["raio"]) < 0.3]
     capsulas_ref = [p for p in P if p not in esferas]

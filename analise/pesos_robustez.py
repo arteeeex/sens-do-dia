@@ -68,7 +68,7 @@ def tempos(df, corrida):
     return np.array(t_ini, float), np.array(ev, int), t_eu
 
 
-def pesos(df, corrida="dano", agrupar=("estrato", "tipo")):
+def pesos(df, corrida="dano", agrupar=("estrato", "tipo"), fator_banda=1.0):
     t_ini, ev, t_eu = tempos(df, corrida)
     d = df.assign(t_ini=t_ini, ev_ini=ev)
     dens = {}
@@ -77,7 +77,7 @@ def pesos(df, corrida="dano", agrupar=("estrato", "tipo")):
               for tp, g in d.groupby("tipo")}
     for chave, g in d.groupby(list(agrupar)):
         st, sj, _ = kaplan_meier(g["t_ini"].to_numpy(float), g["ev_ini"].to_numpy(int))
-        banda = bandas[g["tipo"].iloc[0]]
+        banda = bandas[g["tipo"].iloc[0]] * fator_banda
         dens[chave if isinstance(chave, tuple) else (chave,)] = densidade(st, sj, banda) if len(st) else (lambda x: np.zeros(1))
     v = []
     for i, r in enumerate(d.to_dict("records")):
@@ -98,6 +98,8 @@ def main():
         "B) corrida pela kill": pesos(df, "kill"),
         "C) curva do inimigo unica": pesos(df, agrupar=("tipo",)),
         "D) so frequencia": np.array([(df["estrato"] == e).mean() for e in IDS]),
+        "A com suavizacao x0,5 (Silverman / 2)": pesos(df, fator_banda=0.5),
+        "A com suavizacao x2": pesos(df, fator_banda=2.0),
     }
     print(f"{'':42s}" + "".join(f"{e:>9s}" for e in IDS))
     for k, w in W.items():
@@ -136,7 +138,7 @@ def main():
     print("\nse a verdade for o peso atual e o app usasse outro (melhor ponto de cada situacao com 20% de desvio):")
     print(f"{'peso usado':42s} {'sens muda (tipico)':>19s} {'95% das pessoas':>16s} {'perda de desempenho':>20s}")
     for k, w in W.items():
-        if k.startswith("A"):
+        if k.startswith("A)"):
             continue
         a, b, p = efeito(w)
         print(f"{k:42s} {a:18.2f}% {b:15.2f}% {p:19.4f}%")

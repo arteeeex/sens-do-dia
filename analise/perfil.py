@@ -94,6 +94,13 @@ def velocidade_linear(tr, ds, k):
     return passo * math.pi / 180 * ds[k]
 
 
+def passo_linear(tr, ds, k):
+    """Velocidade de UM passo (da amostra k-1 para a k), em unidades/s, na distancia da amostra k-1."""
+    if k < 1:
+        return np.zeros(2)
+    return (np.asarray(tr[k]) - np.asarray(tr[k - 1])) * HZ * math.pi / 180 * ds[k - 1]
+
+
 def continuar_caminhos(df):
     """O caminho real do inimigo acaba quando alguem morre (65% dos duelos antes de 1,5 s).
     No teste, se tu demora mais que o duelo real, o boneco ficaria parado. Aqui ele segue com
@@ -118,7 +125,7 @@ def continuar_caminhos(df):
         usados = 0
         while len(tr) < N_TRAJ:
             k = len(tr) - 1
-            v = velocidade_linear(tr, ds, k)
+            v = passo_linear(tr, ds, k)
             vivos = [j for j in range(len(recs)) if j != i and nreal[j] > k + 1]
             cands = []
             # doador na mesma faixa de distancia (inimigo de perto nao anda como inimigo de longe),
@@ -136,7 +143,10 @@ def continuar_caminhos(df):
                 cands = vivos
             if not cands:
                 break
-            dif = [np.hypot(*(velocidade_linear(trs[j], dss[j], k) - v)) for j in cands]
+            # casa o PROXIMO passo do doador com o ULTIMO passo real deste alvo (unidades/s): a costura
+            # nao aparece. Teste contra o futuro real escondido (concorrentes_caminho.py, 01/11/2026):
+            # ganhou da velocidade media dos 2 ultimos passos em 100% dos sorteios.
+            dif = [np.hypot(*(passo_linear(trs[j], dss[j], k + 1) - v)) for j in cands]
             j = cands[int(np.argmin(dif))]
             usados += 1
             for m in range(k + 1, min(N_TRAJ, nreal[j])):
